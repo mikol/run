@@ -21,25 +21,26 @@ run <command> [-- <args>...]
 ## Why not `npm run-script`?
 
 Obviously, `npm` is a fine piece of software. And `npm run-script` (AKA `npm
-run`) is one of the simplest [development automation](https://goo.gl/cuA7TD)
-tools available. I love it, and as a result, I haven’t ever wanted to waste time
-learning more featureful alternatives like [`gulp`](https://goo.gl/WLyxEK) or
-[`grunt`](https://goo.gl/g779Qk).
+run`) is [one of the simplest development automation tools
+available](https://goo.gl/cuA7TD). I love it, and as a result, I have never
+wanted to waste time learning more featureful alternatives like
+[`gulp`](https://goo.gl/WLyxEK) or [`grunt`](https://goo.gl/g779Qk).
 
-But… it could be better. The first frustration I have with `npm run` is signal
-handling. When `npm run` executes scripts, handling signals like `'SIGINT'` in
-scripts themselves is unreliable at best, which means a script that needs to
-clean up before exiting simply can’t. The implications here go beyond signal
-handling – scripts behave differently when `npm` runs them than they do when run
-by themselves. `npm run` just isn’t satisfied to run something and then get out
-out of the way.
+But… it could be better. One thing that `npm run` doesn’t support well is
+[signal handling](https://goo.gl/w6eQze). When `npm run` executes scripts,
+handling signals like `'SIGINT'` within the scripts themselves is unreliable at
+best, which means a script that should clean up before exiting simply can’t. The
+implications go beyond signal handling – scripts behave differently when `npm`
+runs them than they do when they run by themselves. `npm run` just isn’t
+satisfied to run something and then get out out of the way.
 
 Which may account for the fact that `npm run` [is verbose to a
 fault](https://goo.gl/CoFLVr). `npm` has a lot more on its mind than just
 running your scripts so by default you’re going to see more output than you
-really need. Sure, you can pass it `--silent`, but other people (your teammates
-and mine, for example) have to do the same thing or they’ll get a bunch of `npm`
-disclaimer boilerplate when they really want to see what the script itself did.
+really need. Sure, you can pass it `--silent` or redirect output to `/dev/null`,
+but other people (your teammates and mine, for example) will need to do the same
+or they’ll get a bunch of `npm` disclaimer boilerplate when what they really
+want to see is what the script itself did.
 
 Finally, `package.json` is great for project configuration, but it’s a pretty
 poor place to write scripts. There’s no way to comment or document your scripts.
@@ -48,10 +49,10 @@ or forces artificial factoring of script logic.
 
 ## Why `run`?
 
-Although `run` is quieter and will cede more control to the scripts, it is
-designed to work as much like `npm run` as possible. In fact, you can easily use
-it as if it were nothing more than a synonym for `npm run`; it’ll happily find
-and execute all the scripts you have already defined in `package.json`.
+Although `run` is quieter and will cede more control to scripts, it is designed
+to work as much like `npm run` as possible. In fact, you can easily use it as if
+it was nothing more than an alias for `npm run`; it’ll happily find and execute
+all the scripts you have already defined in `package.json`.
 
 But if you create a `scripts.js` file, `run` will look there for tasks as well.
 Here’s what the `run` project’s own `scripts.js` looks like:
@@ -69,7 +70,7 @@ module.exports = {
   predist: `mkdir -p ${distDirname}`,
   dist: 'rollup -c',
   postdist: `chmod 755 ${distPathname}`,
-  watchdist: 'run dist --watch',
+  watchdist: 'run dist -- --watch',
 
   // ---------------------------------------------------------------------------
 
@@ -86,7 +87,7 @@ module.exports = {
 
   pretest: 'run dist',
   test: "mocha -s 400 test/init.js './test/*.test.js' './test/**/*.test.js'",
-  watchtest: 'run test --watch'
+  watchtest: 'run test -- --watch'
 
   // ---------------------------------------------------------------------------
 }
@@ -95,13 +96,12 @@ module.exports = {
 The first thing you’ll see is that `run` supports imports. Now you can share
 modules between the code you build and the code that builds it.
 
-Then there are comments and whitespace. Which make automation tasks easier to
+Then there are comments and whitespace, which make automation tasks easier to
 write, read, and maintain.
 
 Finally, you might have noticed that the `echo` script is actually a plain-old
 JavaScript function reference. Just like other scripts, functions will be passed
-whatever you arguments you define after the `--` in `run <command> [--
-<args>...]`.
+whatever arguments you define after the `--` in `run <command> [-- <args>...]`.
 
 ```
 $ run echo -- Hello, World!
@@ -120,12 +120,12 @@ Imagine that.
 
 #### `npm_package_*`
 
-`run` will define `npm_package_*` environment variables, which are useful to
-shell scripts that depend on values stored in `package.json`, with a couple
-exceptions.
+Because `npm_package_*` variables are useful to shell scripts that depend on
+values stored in `package.json`, `run` will define most of them exactly as `npm`
+does. However, there are a couple of exceptions.
 
 Unlike, `npm run`, `run` will _not_ attempt to normalize `package.json` keys or
-values. For example, `run` will not produce the following environment variables
+values. For example, `run` won’t produce the following environment variables
 unless they are explicitly included in `package.json`:
 
   * `npm_package_bugs_url`
@@ -139,7 +139,8 @@ For a complete description of how `npm run` transforms `package.json`, see:
 
 #### `npm_config_*`
 
-In the interest of simplicity in both implementation and behavior, `run` does not read `npm`’s configuration nor does it define `npm_config_*` variables.
+In the interest of simplicity in both implementation and behavior, `run` does
+not read `npm`’s configuration nor does it define `npm_config_*` variables.
 
 #### Other `npm_*`
 
@@ -156,7 +157,7 @@ Planned, but not yet implemented.
 
 ### Prepending `node`’s directory to `$PATH`
 
-How useful would it be to you for `run` support `npm`’s
+How useful would it be to you for `run` to support `npm`’s
 `--scripts-prepend-node-path[=auto|false|true|warn-only]` option? Let me know.
 
 ## Credits
