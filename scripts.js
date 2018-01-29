@@ -10,7 +10,7 @@ module.exports = {
   predist: `mkdir -p ${distDirname}`,
   dist: 'rollup -c',
   postdist: `chmod 755 ${distPathname}`,
-  watchdist: 'run dist --watch',
+  watchdist: 'run dist -- --watch',
 
   // ---------------------------------------------------------------------------
 
@@ -27,7 +27,7 @@ module.exports = {
 
   pretest: 'run dist',
   test: "mocha -s 400 test/init.js './test/*.test.js' './test/**/*.test.js'",
-  watchtest: 'run test --watch'
+  watchtest: 'run test -- --watch'
 
   // ---------------------------------------------------------------------------
 }
