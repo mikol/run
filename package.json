@@ -1,6 +1,6 @@
 {
   "name": "run",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A simple, enhanced replacement for `npm run-script <command> [-- <args>...]`",
   "bin": {
     "run": "dist/run"
