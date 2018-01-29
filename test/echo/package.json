@@ -1,0 +1,10 @@
+{
+  "name": "echo",
+  "version": "2.3.5",
+  "scripts": {
+    "echo": "echo",
+    "prex": "echo pre",
+    "x": "run echo -- x",
+    "postx": "echo post"
+  }
+}

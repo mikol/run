@@ -1,0 +1,319 @@
+const {execSync, spawnSync} = require('child_process')
+const fs = require('fs')
+const path = require('path')
+
+const env = process.env
+const packageBasename = 'package.json'
+const scriptsBasename = 'scripts.js'
+const expandableRegEx = /\bnpm run\s+(\S+)\b/g
+const defaultEnvScript = 'env'
+const defaultStartScript = 'node server.js'
+const defaultRestartNames = [
+  'prestop',
+  'stop',
+  'poststop',
+  'prestart',
+  'start',
+  'poststart'
+]
+
+// -----------------------------------------------------------------------------
+// Options
+
+const execPath = process.argv[1]
+const appName = path.basename(execPath)
+const scriptName = process.argv[2]
+const ignoredOptions = process.argv.slice(3)
+const endScanningIndex = ignoredOptions.findIndex((x) => x === '--')
+const unscannedOptions = endScanningIndex > -1
+  ? ignoredOptions.slice(endScanningIndex + 1)
+  : []
+
+const initialWorkingDirectory = env.INIT_CWD || process.cwd()
+
+const {
+  moduleRoot,
+  nodeDotBin,
+  packageFilename,
+  scriptsFilename,
+  scripts
+} = importScripts(initialWorkingDirectory)
+
+// ---------------------------------------------------------------------------
+// Utilities
+
+function importFromPackageJson(packageFilename) {
+  try {
+    return require(packageFilename).scripts || {}
+  } catch (error) {
+    if (error.code === 'MODULE_NOT_FOUND') {
+      return {}
+    }
+
+    throw error
+  }
+}
+
+function importFromScriptsJs(scriptsFilename) {
+  try {
+    return require(scriptsFilename)
+  } catch (error) {
+    if (error.code === 'MODULE_NOT_FOUND') {
+      return {}
+    }
+
+    throw error
+  }
+}
+
+function isEmpty(object) {
+  for (const k in object) {
+    return false
+  }
+
+  return true
+}
+
+function importScripts(from) {
+  const packageFilename = path.join(from, packageBasename)
+  const scriptsFilename = path.join(from, scriptsBasename)
+
+  const scriptsFromJson = importFromPackageJson(packageFilename)
+  const scriptsFromJs = importFromScriptsJs(scriptsFilename)
+
+  const scripts = Object.assign({}, scriptsFromJson, scriptsFromJs)
+
+  const found =
+    !isEmpty(scripts) ||
+    fs.existsSync(packageFilename) ||
+    fs.existsSync(scriptsFilename)
+
+  if (found) {
+    return {
+      moduleRoot: from,
+      nodeDotBin: path.join(from, 'node_modules', '.bin'),
+      packageFilename,
+      scriptsFilename,
+      scripts
+    }
+  }
+
+  const next = from.split(path.sep).slice(0, -1).join(path.sep)
+
+  if (next) {
+    return importScripts(next)
+  }
+
+  console.error(`${appName}: Did not find ${packageBasename} or ${scriptsBasename} starting from ${initialWorkingDirectory}`)
+  process.exit(1)
+}
+
+function escapeDoubleQuote(string) {
+  return string.replace(/"/g, '\\"')
+}
+
+function quoteOptions(opts) {
+  return `"${opts.map(escapeDoubleQuote).join('" "')}"`
+}
+
+function quoteArguments(args) {
+  return `"${args.map(escapeDoubleQuote).join('", "')}"`
+}
+
+function interpolateScriptSource(source) {
+  if (source && typeof source !== 'function') {
+    if (expandableRegEx.test(source)) {
+      return source.replace(expandableRegEx, 'run $1')
+    }
+  }
+
+  return source
+}
+
+function appendUnscannedUptions(source) {
+  if (source && unscannedOptions.length > 0) {
+    if (typeof source === 'function') {
+      return () => source.apply(null, unscannedOptions)
+    }
+
+    return `${source} ${quoteOptions(unscannedOptions)}`
+  }
+
+  return source
+}
+
+function infixScript(scriptName) {
+  const found = !!scripts[scriptName]
+
+  if (!found) {
+    if (scriptName === 'env') {
+      return {env: interpolateScriptSource(defaultEnvScript)}
+    }
+
+    if (scriptName === 'start') {
+      return {start: interpolateScriptSource(defaultStartScript)}
+    }
+  }
+
+  const names = found
+    ? [`pre${scriptName}`, scriptName, `post${scriptName}`]
+    : (scriptName === 'restart' ? defaultRestartNames : [])
+
+  return names.reduce((accumulator, name) => {
+    const source = interpolateScriptSource(scripts[name])
+
+    if (source) {
+      if (name === scriptName) {
+        accumulator[name] = appendUnscannedUptions(source)
+      } else {
+        accumulator[name] = source
+      }
+    }
+
+    return accumulator
+  }, {})
+}
+
+function envifyPackage() {
+  const object = Object.assign({}, require(packageFilename))
+
+  if (!object.scripts) {
+    object.scripts = {}
+  }
+
+  if (!object.scripts.env) {
+    object.scripts.env = defaultEnvScript
+  }
+
+  try {
+    env.npm_package_gitHead = execSync("git log -1 --format='%H'", {
+      stdio: ['ignore', 'pipe', 'ignore']
+    })
+  } catch (_) {
+    // Ignore.
+  }
+
+  for (const k in object) {
+    envifyValue(`npm_package_${k}`, object[k])
+  }
+
+  function envifyValue(key, value) {
+    if (value != null) {
+      if (value.constructor === Object) {
+        for (const k in value) {
+          envifyValue(`${key}_${k.replace(/[^a-zA-Z0-9_]/g, '_')}`, value[k])
+        }
+      } else if (value.constructor === Array) {
+        for (let i = 0, n = value.length; i < n; ++i) {
+          envifyValue(`${key}_${i}`, value[i])
+        }
+      } else {
+        return env[key] = value
+      }
+    }
+  }
+}
+
+function main() {
+  const runnableScripts = infixScript(scriptName)
+  const runnableScriptNames = Object.keys(runnableScripts)
+
+  if (runnableScriptNames.length === 0) {
+    if (scriptName) {
+      console.error(`${appName}: ${moduleRoot}: Script ${scriptName} is not defined in ${packageBasename} or ${scriptsBasename}`)
+      process.exit(1)
+    } else {
+      console.log(`run: ${moduleRoot} scripts:`)
+      Object.keys(scripts).forEach((name) => console.log(`  ${name}:\n    ${scripts[name]}`))
+      process.exit()
+    }
+  }
+
+  env.NODE = env.npm_node_execpath = process.execPath
+  env.PATH = `${nodeDotBin}:${env.PATH}`
+  env.run_execpath = execPath
+
+  envifyPackage()
+
+  process.chdir(moduleRoot)
+
+  runnableScriptNames.forEach((name) => {
+    const script = runnableScripts[name]
+
+    env.npm_lifecycle_event = env.run_event = name
+
+    console.log()
+    console.log(`> ${name} ${moduleRoot}`)
+
+    if (typeof script === 'function') {
+      const args = unscannedOptions.length > 0 ? quoteArguments(unscannedOptions) : ''
+      const signature = env.npm_lifecycle_script = env.run_script = `${name}(${args})`
+
+      console.log(`> ${signature}`)
+      console.log()
+      script.apply(null, args.split(/\s+/))
+    } else {
+      env.npm_lifecycle_script = env.run_script = `${script}`
+
+      console.log(`> ${script}`)
+      console.log()
+      const {error, status} = spawnSync('sh', ['-c', `${script}`], {stdio: 'inherit'})
+
+      if (error) {
+        console.error(error)
+        process.exit(1)
+      }
+
+      if (status) {
+        process.exit(status)
+      }
+    }
+  })
+}
+
+// -----------------------------------------------------------------------------
+
+main()
+
+// -----------------------------------------------------------------------------
+// TODO
+//
+// [ ] Support hook scripts
+//
+// > If you want to run a specific script at a specific lifecycle event for ALL
+// > packages, then you can use a hook script.
+//
+// > Place an executable file at node_modules/.hooks/{eventname}, and it'll get
+// > run for all packages when they are going through that point in the package
+// >lifecycle for any packages installed in that root.
+// >
+// > Hook scripts are run exactly the same way as package.json scripts. That is,
+// > they are in a separate child process, with the env described above.
+//
+// [ ] Support `--scripts-prepend-node-path[=auto|false|true|warn-only]`
+//
+// Is this necessary? How else would we run without `node` from `env.PATH`?
+//
+// > If you want npm to run package scripts using the same node
+// > binary the npm uses, you can set that by doing npm config set
+// > scripts-prepend-node-path true; if you don’t want that to happen,
+// > and you want npm to run scripts using the same node that you get
+// > when you directly enter node in the command line, you can achieve
+// > that via npm config set scripts-prepend-node-path false.
+// >
+// > https://github.com/npm/npm/issues/14372
+//
+// Maybe if a GUI tool runs the command?
+//
+// > Special to my issue is that I start my npm command (a command like
+// > npm run build) from IntelliJ.
+// >
+// >   1. IntelliJ started from the menu. Running npm command will FAILS.
+// >   2. IntelliJ started from a terminal. Running npm command is SUCCESSFUL.
+// >
+// > It's depending on the linux PATH. In the second setting IntelliJ
+// > get's node from the linux PATH.
+// >
+// > https://github.com/npm/npm/issues/15398
+
+// -----------------------------------------------------------------------------

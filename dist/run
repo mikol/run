@@ -1,0 +1,273 @@
+#!/usr/bin/env node
+
+// run v0.0.0 (2018-01-29T04:04:47.169Z)
+// https://github.com/mikol/run
+// http://creativecommons.org/licenses/by/4.0/
+
+'use strict';
+
+var _require = require('child_process');
+var execSync = _require.execSync;
+var spawnSync = _require.spawnSync;
+
+var fs = require('fs');
+var path = require('path');
+
+var env = process.env;
+var packageBasename = 'package.json';
+var scriptsBasename = 'scripts.js';
+var expandableRegEx = /\bnpm run\s+(\S+)\b/g;
+var defaultEnvScript = 'env';
+var defaultStartScript = 'node server.js';
+var defaultRestartNames = ['prestop', 'stop', 'poststop', 'prestart', 'start', 'poststart'];
+
+var execPath = process.argv[1];
+var appName = path.basename(execPath);
+var scriptName = process.argv[2];
+var ignoredOptions = process.argv.slice(3);
+var endScanningIndex = ignoredOptions.findIndex(function (x) {
+  return x === '--';
+});
+var unscannedOptions = endScanningIndex > -1 ? ignoredOptions.slice(endScanningIndex + 1) : [];
+
+var initialWorkingDirectory = env.INIT_CWD || process.cwd();
+
+var _importScripts = importScripts(initialWorkingDirectory);
+var moduleRoot = _importScripts.moduleRoot;
+var nodeDotBin = _importScripts.nodeDotBin;
+var packageFilename = _importScripts.packageFilename;
+var scriptsFilename = _importScripts.scriptsFilename;
+var scripts = _importScripts.scripts;
+
+function importFromPackageJson(packageFilename) {
+  try {
+    return require(packageFilename).scripts || {};
+  } catch (error) {
+    if (error.code === 'MODULE_NOT_FOUND') {
+      return {};
+    }
+
+    throw error;
+  }
+}
+
+function importFromScriptsJs(scriptsFilename) {
+  try {
+    return require(scriptsFilename);
+  } catch (error) {
+    if (error.code === 'MODULE_NOT_FOUND') {
+      return {};
+    }
+
+    throw error;
+  }
+}
+
+function isEmpty(object) {
+  for (var k in object) {
+    return false;
+  }
+
+  return true;
+}
+
+function importScripts(from) {
+  var packageFilename = path.join(from, packageBasename);
+  var scriptsFilename = path.join(from, scriptsBasename);
+
+  var scriptsFromJson = importFromPackageJson(packageFilename);
+  var scriptsFromJs = importFromScriptsJs(scriptsFilename);
+
+  var scripts = Object.assign({}, scriptsFromJson, scriptsFromJs);
+
+  var found = !isEmpty(scripts) || fs.existsSync(packageFilename) || fs.existsSync(scriptsFilename);
+
+  if (found) {
+    return {
+      moduleRoot: from,
+      nodeDotBin: path.join(from, 'node_modules', '.bin'),
+      packageFilename: packageFilename,
+      scriptsFilename: scriptsFilename,
+      scripts: scripts
+    };
+  }
+
+  var next = from.split(path.sep).slice(0, -1).join(path.sep);
+
+  if (next) {
+    return importScripts(next);
+  }
+
+  console.error(appName + ': Did not find ' + packageBasename + ' or ' + scriptsBasename + ' starting from ' + initialWorkingDirectory);
+  process.exit(1);
+}
+
+function escapeDoubleQuote(string) {
+  return string.replace(/"/g, '\\"');
+}
+
+function quoteOptions(opts) {
+  return '"' + opts.map(escapeDoubleQuote).join('" "') + '"';
+}
+
+function quoteArguments(args) {
+  return '"' + args.map(escapeDoubleQuote).join('", "') + '"';
+}
+
+function interpolateScriptSource(source) {
+  if (source && typeof source !== 'function') {
+    if (expandableRegEx.test(source)) {
+      return source.replace(expandableRegEx, 'run $1');
+    }
+  }
+
+  return source;
+}
+
+function appendUnscannedUptions(source) {
+  if (source && unscannedOptions.length > 0) {
+    if (typeof source === 'function') {
+      return function () {
+        return source.apply(null, unscannedOptions);
+      };
+    }
+
+    return source + ' ' + quoteOptions(unscannedOptions);
+  }
+
+  return source;
+}
+
+function infixScript(scriptName) {
+  var found = !!scripts[scriptName];
+
+  if (!found) {
+    if (scriptName === 'env') {
+      return { env: interpolateScriptSource(defaultEnvScript) };
+    }
+
+    if (scriptName === 'start') {
+      return { start: interpolateScriptSource(defaultStartScript) };
+    }
+  }
+
+  var names = found ? ['pre' + scriptName, scriptName, 'post' + scriptName] : scriptName === 'restart' ? defaultRestartNames : [];
+
+  return names.reduce(function (accumulator, name) {
+    var source = interpolateScriptSource(scripts[name]);
+
+    if (source) {
+      if (name === scriptName) {
+        accumulator[name] = appendUnscannedUptions(source);
+      } else {
+        accumulator[name] = source;
+      }
+    }
+
+    return accumulator;
+  }, {});
+}
+
+function envifyPackage() {
+  var object = Object.assign({}, require(packageFilename));
+
+  if (!object.scripts) {
+    object.scripts = {};
+  }
+
+  if (!object.scripts.env) {
+    object.scripts.env = defaultEnvScript;
+  }
+
+  try {
+    env.npm_package_gitHead = execSync("git log -1 --format='%H'", {
+      stdio: ['ignore', 'pipe', 'ignore']
+    });
+  } catch (_) {
+
+  }
+
+  for (var k in object) {
+    envifyValue('npm_package_' + k, object[k]);
+  }
+
+  function envifyValue(key, value) {
+    if (value != null) {
+      if (value.constructor === Object) {
+        for (var _k in value) {
+          envifyValue(key + '_' + _k.replace(/[^a-zA-Z0-9_]/g, '_'), value[_k]);
+        }
+      } else if (value.constructor === Array) {
+        for (var i = 0, n = value.length; i < n; ++i) {
+          envifyValue(key + '_' + i, value[i]);
+        }
+      } else {
+        return env[key] = value;
+      }
+    }
+  }
+}
+
+function main() {
+  var runnableScripts = infixScript(scriptName);
+  var runnableScriptNames = Object.keys(runnableScripts);
+
+  if (runnableScriptNames.length === 0) {
+    if (scriptName) {
+      console.error(appName + ': ' + moduleRoot + ': Script ' + scriptName + ' is not defined in ' + packageBasename + ' or ' + scriptsBasename);
+      process.exit(1);
+    } else {
+      console.log('run: ' + moduleRoot + ' scripts:');
+      Object.keys(scripts).forEach(function (name) {
+        return console.log('  ' + name + ':\n    ' + scripts[name]);
+      });
+      process.exit();
+    }
+  }
+
+  env.NODE = env.npm_node_execpath = process.execPath;
+  env.PATH = nodeDotBin + ':' + env.PATH;
+  env.run_execpath = execPath;
+
+  envifyPackage();
+
+  process.chdir(moduleRoot);
+
+  runnableScriptNames.forEach(function (name) {
+    var script = runnableScripts[name];
+
+    env.npm_lifecycle_event = env.run_event = name;
+
+    console.log();
+    console.log('> ' + name + ' ' + moduleRoot);
+
+    if (typeof script === 'function') {
+      var args = unscannedOptions.length > 0 ? quoteArguments(unscannedOptions) : '';
+      var signature = env.npm_lifecycle_script = env.run_script = name + '(' + args + ')';
+
+      console.log('> ' + signature);
+      console.log();
+      script.apply(null, args.split(/\s+/));
+    } else {
+      env.npm_lifecycle_script = env.run_script = '' + script;
+
+      console.log('> ' + script);
+      console.log();
+
+      var _spawnSync = spawnSync('sh', ['-c', '' + script], { stdio: 'inherit' }),
+          error = _spawnSync.error,
+          status = _spawnSync.status;
+
+      if (error) {
+        console.error(error);
+        process.exit(1);
+      }
+
+      if (status) {
+        process.exit(status);
+      }
+    }
+  });
+}
+
+main();
