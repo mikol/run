@@ -8,7 +8,7 @@ describe('echo', () => {
 
   it('prints script name and working directory', () => {
     const stdout = runRun(INIT_CWD, ['echo']).trim()
-    const suffix = `> echo ${INIT_CWD}${eol}> echo`
+    const suffix = `> echo@2.3.5 ${INIT_CWD}${eol}> echo`
 
     expect(stdout).to.endWith(suffix)
   })
@@ -57,7 +57,7 @@ describe('echo', () => {
 
   it('echos x', () => {
     const stdout = runRun(INIT_CWD, ['x']).trim()
-    const regexp = new RegExp(`> run echo -- x${eol}{3}> echo \\S.*?${eol}> echo "x"${eol}{2}x`)
+    const regexp = new RegExp(`> run echo -- x${eol}{3}> echo@2.3.5 \\S.*?${eol}> echo "x"${eol}{2}x`)
 
     expect(stdout).to.match(regexp)
   })
