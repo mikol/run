@@ -9,7 +9,7 @@
 ## Installation
 
 ```
-npm install -g https://github.com/mikol/run
+npm install -g run-x
 ```
 
 ## Usage

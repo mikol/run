@@ -1,11 +1,13 @@
-# 0.0.1 Initial implementation
+# `run` Changelog
+
+## 0.0.1 Initial implementation
 
   * Core compatibility with `npm run-script <command> [-- <args>...]`
   * Define scripts using JavaScript in `scripts.js`
   * Use plain-old JavaScript function references as scripts
   * Minimal unit tests
 
-# 0.0.2 Module implementation
+## 0.0.2 Module implementation
 
   * Extends EventEmitter, which can be used like so:
 
@@ -38,3 +40,5 @@
     ```
 
   * Includes `@${version}` specified in `package.json` in script preambles
+
+## 0.0.3 Initial npm release
