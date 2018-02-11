@@ -1,4 +1,4 @@
-# `run` – Development task automation
+# `run` – Simple development task automation
 
 ## Briefly
 
@@ -34,13 +34,13 @@ implications go beyond signal handling – scripts behave differently when `npm`
 runs them than they do when they run by themselves. `npm run` just isn’t
 satisfied to run something and then get out out of the way.
 
-Which may account for the fact that `npm run` [is verbose to a
-fault](https://goo.gl/CoFLVr). `npm` has a lot more on its mind than just
-running your scripts so by default you’re going to see more output than you
-really need. Sure, you can pass it `--silent` or redirect output to `/dev/null`,
-but other people (your teammates and mine, for example) will need to do the same
-or they’ll get a bunch of `npm` disclaimer boilerplate when what they really
-want to see is what the script itself did.
+Which may explain why `npm run` [is verbose to a fault](https://goo.gl/CoFLVr).
+`npm` has a lot more on its mind than just running your scripts so by default
+you’re going to see more output than you really need. Sure, you can pass it
+`--silent` or redirect output to `/dev/null`, but other people (your teammates
+and mine, for example) will need to do the same or they’ll get a bunch of `npm`
+disclaimer boilerplate when what they really want to see is what the script
+itself did.
 
 Finally, `package.json` is great for project configuration, but it’s a pretty
 poor place to write scripts. There’s no way to comment or document your scripts.
