@@ -9,7 +9,7 @@
 ## Installation
 
 ```
-npm install -g run-x
+npm install -g run-simple
 ```
 
 ## Usage
