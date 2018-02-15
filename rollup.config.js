@@ -1,7 +1,6 @@
 import babelrc from 'babelrc-rollup'
 import babel from 'rollup-plugin-babel'
 import cleanup from 'rollup-plugin-cleanup'
-import commonjs from 'rollup-plugin-commonjs'
 
 const {distPathname, pkg} = require('./scripts/constants')
 
@@ -22,14 +21,17 @@ export default {
     babel(babelrc({
       addModuleOptions: false
     })),
-    commonjs({
-      include: 'run',
-      sourceMap: false
-    }),
-    cleanup({
-      extensions: '*',
-      include: 'run',
-      maxEmptyLines: 1
-    })
+    (function rmEol() {
+      return Object.assign({}, cleanup({extensions: '*', maxEmptyLines: 1}), {
+        // `babel()` adds boilerplate with excess new lines to the generated
+        // bundle, and `cleanup()` doesn’t define `transformBundle()` so it
+        // doesn’t remove all new lines as expected. Which is why we define our
+        // own `transformBundle()` and remove new lines here as well.
+        transformBundle: (source) => ({
+          code: source.replace(/(?:\r\n?|\n){3,}/g, '\n\n'),
+          map: null
+        })
+      })
+    }())
   ]
 }

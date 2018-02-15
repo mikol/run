@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// run v0.0.3 (2018-02-11T18:56:18.958Z)
+// run v0.0.3 (2018-02-15T07:57:09.586Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by/4.0/
 
@@ -30,14 +30,6 @@ var createClass = function () {
   };
 }();
 
-
-
-
-
-
-
-
-
 var inherits = function (subClass, superClass) {
   if (typeof superClass !== "function" && superClass !== null) {
     throw new TypeError("Super expression must either be null or a function, not " + typeof superClass);
@@ -53,16 +45,6 @@ var inherits = function (subClass, superClass) {
   });
   if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass;
 };
-
-
-
-
-
-
-
-
-
-
 
 var possibleConstructorReturn = function (self, call) {
   if (!self) {
