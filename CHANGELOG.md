@@ -12,7 +12,7 @@
   * Extends EventEmitter, which can be used like so:
 
     ```js
-    const Runner = require('run')
+    const Runner = require('run-simple')
     const runner = new Runner()
 
     runner.on('error', (error) => {
@@ -42,3 +42,9 @@
   * Includes `@${version}` specified in `package.json` in script preambles
 
 ## 0.0.3 Initial npm release
+
+## 0.0.4 Refactor executable and module
+
+  * Split module into `runner.js`
+  * Update docs and scripts accordingly
+  * Drop plans for hooks scripts and prepending node path
