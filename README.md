@@ -183,15 +183,6 @@ not read `npm`’s configuration nor does it define `npm_config_*` variables.
   * `npm_lifecycle_script`
   * `npm_node_execpath`
 
-### Hook Scripts
-
-Planned, but not yet implemented.
-
-### Prepending `node`’s directory to `$PATH`
-
-How useful would it be to you for `run` to support `npm`’s
-`--scripts-prepend-node-path[=auto|false|true|warn-only]` option? Let me know.
-
 ## Credits
 
 `run` was inspired in part by “[An alternative to npm
