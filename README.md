@@ -14,8 +14,41 @@ npm install -g run-simple
 
 ## Usage
 
-```
+### Command Line
+
+```sh
 run <command> [-- <args>...]
+```
+
+### Module
+
+```js
+const Runner = require('run-simple')
+const runner = new Runner()
+
+runner.on('error', (error) => {
+  console.error(error)
+  process.exit(1)
+})
+
+runner.on('exit', (code) => {
+  process.exit(code)
+})
+
+runner.on('list', (scripts) => {
+  console.log(`${runner.appName}: ${runner.moduleRoot} scripts:`)
+  Object.keys(scripts).forEach((name) => console.log(`  ${name}:\n    ${scripts[name]}`))
+  process.exit()
+})
+
+runner.on('run', (spec) => {
+  console.log()
+  console.log(`> ${spec.name}${spec.version ? `@${spec.version}` : ''} ${spec.cwd}`)
+  console.log(`> ${spec.script}`)
+  console.log()
+})
+
+runner.run()
 ```
 
 ## Why not `npm run-script`?
@@ -59,17 +92,16 @@ Here’s what the `run` project’s own `scripts.js` looks like:
 
 ```js
 const {
-  distDirname,
-  distPathname
-} = require('./scripts/constants')
+  binPathname
+} = require('./scripts/vars')
 
 module.exports = {
   // ---------------------------------------------------------------------------
   // Dist
 
-  predist: `mkdir -p ${distDirname}`,
+  predist: `mkdir -p dist`,
   dist: 'rollup -c',
-  postdist: `chmod 755 ${distPathname}`,
+  postdist: `chmod 755 ${binPathname}`,
   watchdist: 'run dist -- --watch',
 
   // ---------------------------------------------------------------------------

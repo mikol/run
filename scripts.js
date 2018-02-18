@@ -1,15 +1,14 @@
 const {
-  distDirname,
-  distPathname
-} = require('./scripts/constants')
+  binPathname
+} = require('./scripts/vars')
 
 module.exports = {
   // ---------------------------------------------------------------------------
   // Dist
 
-  predist: `mkdir -p ${distDirname}`,
+  predist: `mkdir -p dist`,
   dist: 'rollup -c',
-  postdist: `chmod 755 ${distPathname}`,
+  postdist: `chmod 755 ${binPathname}`,
   watchdist: 'run dist -- --watch',
 
   // ---------------------------------------------------------------------------
