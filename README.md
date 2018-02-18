@@ -16,7 +16,7 @@ npm install -g run-simple
 
 ### Command Line
 
-```sh
+```
 run <command> [-- <args>...]
 ```
 
