@@ -1,6 +1,4 @@
-#!/usr/bin/env node
-
-// run v0.0.3 (2018-02-18T22:11:26.772Z)
+// run v0.0.3 (2018-02-18T22:25:24.775Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 

@@ -14,10 +14,13 @@ const babelOptions = babelrc({
   addModuleOptions: false
 })
 
-const banner =
+const shebang =
 `#!/usr/bin/env node
 
-// run v${version} (${new Date().toISOString()})
+`
+
+const banner =
+`// run v${version} (${new Date().toISOString()})
 // ${url}
 // ${license}
 `
@@ -26,7 +29,7 @@ export default [
   {
     input: 'run',
     output: {
-      banner,
+      banner: `${shebang}${banner}`,
       file: binPathname,
       format: 'cjs'
     },
