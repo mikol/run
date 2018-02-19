@@ -48,3 +48,8 @@
   * Split module into `runner.js`
   * Update docs and scripts accordingly
   * Drop plans for hooks scripts and prepending node path
+
+### 0.0.5 Script name mangling correctness
+
+  * Fall back to a default `start` script if and only if `server.js` exists
+  * Check that `<command>` does not begin with `pre` or `post` before prefixing
