@@ -1,4 +1,4 @@
-// run v0.0.4 (2018-02-18T22:37:00.282Z)
+// run v0.0.4 (2018-02-19T08:26:28.036Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -64,7 +64,6 @@ var argv = process.argv;
 var env = process.env;
 var expandableRegEx = /\bnpm run\s+(\S+)\b/g;
 var defaultEnvScript = 'env';
-var defaultStartScript = 'node server.js';
 var defaultRestartNames = ['prestop', 'stop', 'poststop', 'prestart', 'start', 'poststart'];
 
 var Runner = function (_EventEmitter) {
@@ -156,27 +155,23 @@ var Runner = function (_EventEmitter) {
 
       var scriptName = this.scriptName;
       var found = !!this.scripts[scriptName];
+      var names = found ? [scriptName] : scriptName === 'restart' ? defaultRestartNames.slice() : [];
 
-      if (!found) {
-        if (scriptName === 'env') {
-          return { env: interpolateScriptSource(defaultEnvScript) };
-        }
-
-        if (scriptName === 'start') {
-          return { start: interpolateScriptSource(defaultStartScript) };
-        }
+      if (!/^(?:pre|post)/.test(scriptName)) {
+        names.unshift('pre' + scriptName);
+        names.push('post' + scriptName);
       }
 
-      var names = found ? ['pre' + scriptName, scriptName, 'post' + scriptName] : scriptName === 'restart' ? defaultRestartNames : [];
-
       return names.reduce(function (accumulator, name) {
-        var source = interpolateScriptSource(_this3.scripts[name]);
+        var source = _this3.scripts[name];
 
         if (source) {
+          var interpolatedSource = interpolateScriptSource(source);
+
           if (name === scriptName) {
-            accumulator[name] = _this3.appendUnscannedArguments(source);
+            accumulator[name] = _this3.appendUnscannedArguments(interpolatedSource);
           } else {
-            accumulator[name] = source;
+            accumulator[name] = interpolatedSource;
           }
         }
 
@@ -192,7 +187,23 @@ var Runner = function (_EventEmitter) {
       if (this.package || this.scripts) {
         this.package = this.package || {};
         this.scripts = Object.assign(this.package.scripts || {}, this.scripts);
+
+        var scriptName = this.scriptName;
+        if (scriptName && !this.scripts[scriptName]) {
+          if (scriptName === 'env') {
+            this.scripts.env = 'env';
+          } else if (scriptName === 'start') {
+            try {
+              fs.statSync(path.join(this.moduleRoot, 'server.js'));
+              this.scripts.start = 'node server.js';
+            } catch (_) {
+
+            }
+          }
+        }
+
         this.dotBin = path.join(this.moduleRoot, 'node_modules', '.bin');
+
         return this;
       }
 

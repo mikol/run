@@ -85,29 +85,25 @@ class Runner extends EventEmitter {
 
     const scriptName = this.scriptName
     const found = !!this.scripts[scriptName]
+    const names = found
+      ? [scriptName]
+      : (scriptName === 'restart' ? defaultRestartNames.slice() : [])
 
-    if (!found) {
-      if (scriptName === 'env') {
-        return {env: interpolateScriptSource(defaultEnvScript)}
-      }
-
-      if (scriptName === 'start') {
-        return {start: interpolateScriptSource(defaultStartScript)}
-      }
+    if (!/^(?:pre|post)/.test(scriptName)) {
+      names.unshift(`pre${scriptName}`)
+      names.push(`post${scriptName}`)
     }
 
-    const names = found
-      ? [`pre${scriptName}`, scriptName, `post${scriptName}`]
-      : (scriptName === 'restart' ? defaultRestartNames : [])
-
     return names.reduce((accumulator, name) => {
-      const source = interpolateScriptSource(this.scripts[name])
+      const source = this.scripts[name]
 
       if (source) {
+        const interpolatedSource = interpolateScriptSource(source)
+
         if (name === scriptName) {
-          accumulator[name] = this.appendUnscannedArguments(source)
+          accumulator[name] = this.appendUnscannedArguments(interpolatedSource)
         } else {
-          accumulator[name] = source
+          accumulator[name] = interpolatedSource
         }
       }
 
@@ -122,7 +118,23 @@ class Runner extends EventEmitter {
     if (this.package || this.scripts) {
       this.package = this.package || {}
       this.scripts = Object.assign(this.package.scripts || {}, this.scripts)
+
+      const scriptName = this.scriptName
+      if (scriptName && !this.scripts[scriptName]) {
+        if (scriptName === 'env') {
+          this.scripts.env = 'env'
+        } else if (scriptName === 'start') {
+          try {
+            fs.statSync(path.join(this.moduleRoot, 'server.js'))
+            this.scripts.start = 'node server.js'
+          } catch (_) {
+            // Ignore.
+          }
+        }
+      }
+
       this.dotBin = path.join(this.moduleRoot, 'node_modules', '.bin')
+
       return this
     }
 
