@@ -1,4 +1,4 @@
-// run v0.0.5 (2018-02-19T08:38:04.018Z)
+// run v0.0.5 (2018-02-24T21:45:48.859Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -95,6 +95,7 @@ var Runner = function (_EventEmitter) {
     var _this = possibleConstructorReturn(this, (Runner.__proto__ || Object.getPrototypeOf(Runner)).call(this));
 
     Object.assign(_this, Runner.defaults(), options);
+    _this.wd = _this.moduleRoot;
     return _this;
   }
 
@@ -213,7 +214,7 @@ var Runner = function (_EventEmitter) {
         return this.findScripts();
       }
 
-      this.emit('error', appName + ': Did not find ' + this.packageBasename + ' or ' + this.scriptsBasename + ' starting from ' + this.cwd);
+      this.emit('error', this.appName + ': Did not find ' + this.packageBasename + ' or ' + this.scriptsBasename + ' starting from ' + this.wd);
     }
   }, {
     key: 'run',

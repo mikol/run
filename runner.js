@@ -36,6 +36,7 @@ class Runner extends EventEmitter {
   constructor(options = {}) {
     super()
     Object.assign(this, Runner.defaults(), options)
+    this.wd = this.moduleRoot
   }
 
   appendUnscannedArguments(source) {
@@ -144,7 +145,7 @@ class Runner extends EventEmitter {
       return this.findScripts()
     }
 
-    this.emit('error', `${appName}: Did not find ${this.packageBasename} or ${this.scriptsBasename} starting from ${this.cwd}`)
+    this.emit('error', `${this.appName}: Did not find ${this.packageBasename} or ${this.scriptsBasename} starting from ${this.wd}`)
   }
 
   run() {
