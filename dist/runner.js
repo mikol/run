@@ -1,4 +1,4 @@
-// run v0.0.5 (2018-02-24T21:45:48.859Z)
+// run v0.0.5 (2018-02-25T02:46:59.077Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -54,15 +54,17 @@ var possibleConstructorReturn = function (self, call) {
 
 var _require = require('child_process');
 var execSync = _require.execSync;
-var spawnSync = _require.spawnSync;
 
 var EventEmitter = require('events');
 var fs = require('fs');
 var path = require('path');
 
+var exec = require('./lib/exec');
+
 var argv = process.argv;
 var env = process.env;
 var expandableRegEx = /\bnpm run\s+(\S+)\b/g;
+
 var defaultEnvScript = 'env';
 var defaultRestartNames = ['prestop', 'stop', 'poststop', 'prestart', 'start', 'poststart'];
 
@@ -220,58 +222,65 @@ var Runner = function (_EventEmitter) {
     key: 'run',
     value: function run() {
       var runnableScripts = this.findRunnableScripts();
+      var scriptNames = Object.keys(runnableScripts);
+      var nScripts = scriptNames.length;
 
-      if (Object.keys(runnableScripts).length === 0) {
+      if (nScripts === 0) {
         if (this.scriptName) {
           this.emit('error', this.appName + ': ' + this.moduleRoot + ': Script ' + this.scriptName + ' is not defined in ' + this.packageBasename + ' or ' + this.scriptsBasename);
         } else {
           this.emit('list', Object.assign(this.scripts));
         }
       } else {
+        var scriptsPathname = path.join(this.moduleRoot, this.scriptsBasename);
+        var self = this;
+
+        var index = 0;
+
         this.exportEnvironmentVariables();
-        process.chdir(this.moduleRoot);
+        process.chdir(this.moduleRoot);(function next() {
+          if (index < nScripts) {
+            var name = scriptNames[index];
+            var script = runnableScripts[name];
 
-        for (var name in runnableScripts) {
-          var script = runnableScripts[name];
+            env.npm_lifecycle_event = env.run_event = name;
 
-          env.npm_lifecycle_event = env.run_event = name;
+            var spec = {
+              wd: self.moduleRoot,
+              name: self.package.name,
+              version: self.package.version
+            };
 
-          var spec = {
-            cwd: this.moduleRoot,
-            name: this.package.name,
-            version: this.package.version
-          };
+            new Promise(function (resolve, reject) {
+              var argv = name === self.scriptName ? self.unscannedArguments : [];
 
-          if (typeof script === 'function') {
-            var args = name === this.scriptName && this.unscannedArguments.length > 0 ? quoteFunctionArguments(this.unscannedArguments) : '';
+              if (typeof script === 'function') {
+                spec.script = env.npm_lifecycle_script = env.run_script = name + '(' + (argv.length ? quoteFunctionArguments(argv) : '') + ')';
 
-            spec.script = env.npm_lifecycle_script = env.run_script = name + '(' + args + ')';
+                self.emit('run', spec);
+                exec.js([scriptsPathname, name].concat(argv), resolve, reject);
+              } else {
+                spec.script = env.npm_lifecycle_script = env.run_script = script;
 
-            this.emit('run', spec);
-
-            try {
-              script.apply(null, args.split(/\s+/));
-            } catch (error) {
-              this.emit('error', error);
-            }
-          } else {
-            spec.script = env.npm_lifecycle_script = env.run_script = '' + script;
-
-            this.emit('run', spec);
-
-            var _spawnSync = spawnSync('sh', ['-c', '' + script], { stdio: 'inherit' }),
-                error = _spawnSync.error,
-                status = _spawnSync.status;
-
-            if (error) {
-              this.emit('error', error);
-            }
-
-            if (status) {
-              this.emit('exit', status);
-            }
+                self.emit('run', spec);
+                exec.sh([script].concat(argv), resolve, reject);
+              }
+            }).then(function () {
+              ++index;
+              next();
+            }).catch(function (reason) {
+              if (reason.code) {
+                self.emit('exit', reason.code);
+              } else if (reason.error) {
+                self.emit('error', reason.error);
+              } else if (reason.signal) {
+                self.emit('signal', reason.signal);
+              } else {
+                throw reason;
+              }
+            });
           }
-        }
+        })();
       }
     }
   }]);

@@ -27,6 +27,28 @@ const banner =
 
 export default [
   {
+    input: 'lib/exec.js',
+    output: {
+      banner,
+      file: 'dist/lib/exec.js',
+      format: 'cjs'
+    },
+    plugins: [
+      babel(babelOptions)
+    ]
+  },
+  {
+    input: 'lib/fork.js',
+    output: {
+      banner,
+      file: 'dist/lib/fork.js',
+      format: 'cjs'
+    },
+    plugins: [
+      babel(babelOptions)
+    ]
+  },
+  {
     input: 'run',
     output: {
       banner: `${shebang}${banner}`,

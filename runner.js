@@ -1,11 +1,14 @@
-const {execSync, spawnSync} = require('child_process')
+const {execSync} = require('child_process')
 const EventEmitter = require('events')
 const fs = require('fs')
 const path = require('path')
 
+const exec = require('./lib/exec')
+
 const argv = process.argv
 const env = process.env
 const expandableRegEx = /\bnpm run\s+(\S+)\b/g
+
 const defaultEnvScript = 'env'
 const defaultStartScript = 'node server.js'
 const defaultRestartNames = [
@@ -150,57 +153,72 @@ class Runner extends EventEmitter {
 
   run() {
     const runnableScripts = this.findRunnableScripts()
+    const scriptNames = Object.keys(runnableScripts)
+    const nScripts = scriptNames.length
 
-    if (Object.keys(runnableScripts).length === 0) {
+    if (nScripts === 0) {
       if (this.scriptName) {
         this.emit('error', `${this.appName}: ${this.moduleRoot}: Script ${this.scriptName} is not defined in ${this.packageBasename} or ${this.scriptsBasename}`)
       } else {
         this.emit('list', Object.assign(this.scripts))
       }
     } else {
+      const scriptsPathname = path.join(this.moduleRoot, this.scriptsBasename)
+      const self = this
+
+      let index = 0
+
       this.exportEnvironmentVariables()
       process.chdir(this.moduleRoot)
 
-      for (const name in runnableScripts) {
-        const script = runnableScripts[name]
+      ;(function next() {
+        if (index < nScripts) {
+          const name = scriptNames[index]
+          const script = runnableScripts[name]
 
-        env.npm_lifecycle_event = env.run_event = name
+          env.npm_lifecycle_event = env.run_event = name
 
-        const spec = {
-          cwd: this.moduleRoot,
-          name: this.package.name,
-          version: this.package.version
+          const spec = {
+            wd: self.moduleRoot,
+            name: self.package.name,
+            version: self.package.version
+          }
+
+          new Promise((resolve, reject) => {
+            const argv = name === self.scriptName ? self.unscannedArguments : []
+
+            if (typeof script === 'function') {
+              spec.script =
+              env.npm_lifecycle_script =
+              env.run_script =
+                `${name}(${argv.length ? quoteFunctionArguments(argv) : ''})`
+
+              self.emit('run', spec)
+              exec.js([scriptsPathname, name].concat(argv), resolve, reject)
+            } else {
+              spec.script =
+              env.npm_lifecycle_script =
+              env.run_script = script
+
+              self.emit('run', spec)
+              exec.sh([script].concat(argv), resolve, reject)
+            }
+          }).then(() => {
+            ++index
+            next()
+          }).catch((reason) => {
+            if (reason.code) {
+              self.emit('exit', reason.code)
+            } else if (reason.error) {
+              self.emit('error', reason.error)
+            } else if (reason.signal) {
+              self.emit('signal', reason.signal)
+            } else {
+              throw reason
+            }
+          })
         }
-
-        if (typeof script === 'function') {
-          const args = (name === this.scriptName && this.unscannedArguments.length > 0)
-            ? quoteFunctionArguments(this.unscannedArguments)
-            : ''
-
-          spec.script = env.npm_lifecycle_script = env.run_script = `${name}(${args})`
-
-          this.emit('run', spec)
-
-          try {
-            script.apply(null, args.split(/\s+/))
-          } catch (error) {
-            this.emit('error', error)
-          }
-        } else {
-          spec.script = env.npm_lifecycle_script = env.run_script = `${script}`
-
-          this.emit('run', spec)
-          const {error, status} = spawnSync('sh', ['-c', `${script}`], {stdio: 'inherit'})
-
-          if (error) {
-            this.emit('error', error)
-          }
-
-          if (status) {
-            this.emit('exit', status)
-          }
-        }
-      }
+      }())
     }
   }
 }

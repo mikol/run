@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// run v0.0.5 (2018-02-24T21:45:48.859Z)
+// run v0.0.5 (2018-02-25T02:46:59.077Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -28,9 +28,13 @@ runner.on('list', function (scripts) {
 
 runner.on('run', function (spec) {
   console.log();
-  console.log('> ' + spec.name + (spec.version ? '@' + spec.version : '') + ' ' + spec.cwd);
+  console.log('> ' + spec.name + (spec.version ? '@' + spec.version : '') + ' ' + spec.wd);
   console.log('> ' + spec.script);
   console.log();
+});
+
+runner.on('signal', function (signal) {
+  process.exit(1);
 });
 
 runner.run();

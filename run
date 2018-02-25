@@ -18,9 +18,13 @@ runner.on('list', (scripts) => {
 
 runner.on('run', (spec) => {
   console.log()
-  console.log(`> ${spec.name}${spec.version ? `@${spec.version}` : ''} ${spec.cwd}`)
+  console.log(`> ${spec.name}${spec.version ? `@${spec.version}` : ''} ${spec.wd}`)
   console.log(`> ${spec.script}`)
   console.log()
+})
+
+runner.on('signal', (signal) => {
+  process.exit(1)
 })
 
 runner.run()
