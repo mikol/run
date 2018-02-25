@@ -53,3 +53,8 @@
 
   * Fall back to a default `start` script if and only if `server.js` exists
   * Check that `<command>` does not begin with `pre` or `post` before prefixing
+
+### 0.0.6 Prepare for programmatic handling of stdio
+
+  * Use `spawn()` to run shell scripts and `fork()` to run JS functions
+  * Move `runner.js` into `lib` directory
