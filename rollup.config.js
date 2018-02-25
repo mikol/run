@@ -27,6 +27,17 @@ const banner =
 
 export default [
   {
+    input: 'run',
+    output: {
+      banner: `${shebang}${banner}`,
+      file: binPathname,
+      format: 'cjs'
+    },
+    plugins: [
+      babel(babelOptions)
+    ]
+  },
+  {
     input: 'lib/exec.js',
     output: {
       banner,
@@ -49,18 +60,7 @@ export default [
     ]
   },
   {
-    input: 'run',
-    output: {
-      banner: `${shebang}${banner}`,
-      file: binPathname,
-      format: 'cjs'
-    },
-    plugins: [
-      babel(babelOptions)
-    ]
-  },
-  {
-    input: 'runner.js',
+    input: 'lib/runner.js',
     output: {
       banner,
       file: mainPathname,

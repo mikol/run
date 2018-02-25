@@ -1,4 +1,4 @@
-// run v0.0.5 (2018-02-25T02:46:59.077Z)
+// run v0.0.5 (2018-02-25T02:52:17.412Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -59,7 +59,7 @@ var EventEmitter = require('events');
 var fs = require('fs');
 var path = require('path');
 
-var exec = require('./lib/exec');
+var exec = require('./exec');
 
 var argv = process.argv;
 var env = process.env;

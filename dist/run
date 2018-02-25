@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-// run v0.0.5 (2018-02-25T02:46:59.077Z)
+// run v0.0.5 (2018-02-25T02:52:17.412Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
 'use strict';
 
-var Runner = require('./runner.js');
+var Runner = require('./lib/runner.js');
 var runner = new Runner();
 
 runner.on('error', function (error) {
