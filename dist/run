@@ -1,13 +1,63 @@
 #!/usr/bin/env node
 
-// run v0.0.6 (2018-02-25T02:58:44.100Z)
+// run v0.0.6 (2018-02-26T08:53:34.438Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
+const version = 'v0.0.6'
+
 'use strict';
 
-var Runner = require('./lib/runner.js');
-var runner = new Runner();
+var ArgvParser = require('./lib/argv-parser');
+var Runner = require('./lib/runner');
+
+function usage(code, message) {
+  var log = console[code ? 'error' : 'log'];
+
+  if (message) {
+    log(message);
+  }
+
+  log('Usage: run [--version] [-h | --help] [-q | --quiet | -s | --silent] <command> [-- <args>...]');
+
+  process.exit(code);
+}
+
+var argv = new ArgvParser(process.argv.slice(2), {
+  aliases: {
+    'help': 'h',
+    'quiet': ['q', 's', 'silent']
+  },
+  defaults: {
+    help: false,
+    quiet: process.env.run_quiet === 'true'
+  },
+  isOkay: function isOkay(key, value) {
+    if (!this.aliases[key] && key !== 'version') {
+      usage(1, 'Unknown option: ' + key);
+    }
+
+    return true;
+  }
+}).parse();
+
+if (argv.quiet) {
+  process.env.run_quiet = 'true';
+}
+
+if (argv.help) {
+  usage();
+}
+
+var runner = new Runner({
+  scriptName: argv[''][0],
+  unscannedArguments: argv['--']
+});
+
+if (argv.version) {
+  console.log(runner.appName + ' ' + (typeof version !== 'undefined' ? version : 'v0.0.0'));
+  process.exit();
+}
 
 runner.on('error', function (error) {
   console.error(error);
@@ -15,6 +65,10 @@ runner.on('error', function (error) {
 });
 
 runner.on('exit', function (code) {
+  if (code && !argv.quiet) {
+    console.error('Exit status ' + code);
+  }
+
   process.exit(code);
 });
 
@@ -27,13 +81,19 @@ runner.on('list', function (scripts) {
 });
 
 runner.on('run', function (spec) {
-  console.log();
-  console.log('> ' + spec.name + (spec.version ? '@' + spec.version : '') + ' ' + spec.wd);
-  console.log('> ' + spec.script);
-  console.log();
+  if (!argv.quiet) {
+    console.log();
+    console.log('> ' + spec.name + (spec.version ? '@' + spec.version : '') + ' ' + spec.wd);
+    console.log('> ' + spec.script);
+    console.log();
+  }
 });
 
 runner.on('signal', function (signal) {
+  if (!argv.quiet) {
+    console.error('' + signal);
+  }
+
   process.exit(1);
 });
 

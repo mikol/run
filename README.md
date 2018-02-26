@@ -17,7 +17,7 @@ npm install -g run-simple
 ### Command Line
 
 ```
-run <command> [-- <args>...]
+run [--version] [-h | --help] [-q | --quiet | -s | --silent] <command> [-- <args>...]
 ```
 
 ### Module
@@ -49,6 +49,7 @@ runner.on('run', (spec) => {
 })
 
 runner.on('signal', (signal) => {
+  console.error(`${signal}`)
   process.exit(1)
 })
 

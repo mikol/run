@@ -58,3 +58,7 @@
 
   * Use `spawn()` to run shell scripts and `fork()` to run JS functions
   * Move `runner.js` into `lib` directory
+
+### 0.0.7 Process command line arguments
+
+  * Implement `--version`, `--help`, and `--quiet` (with `--silent` alias)

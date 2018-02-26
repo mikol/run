@@ -1,5 +1,53 @@
-const Runner = require('./lib/runner.js')
-const runner = new Runner()
+const ArgvParser = require('./lib/argv-parser')
+const Runner = require('./lib/runner')
+
+function usage(code, message) {
+  const log = console[code ? 'error' : 'log']
+
+  if (message) {
+    log(message)
+  }
+
+  log('Usage: run [--version] [-h | --help] [-q | --quiet | -s | --silent] <command> [-- <args>...]')
+
+  process.exit(code)
+}
+
+const argv = new ArgvParser(process.argv.slice(2), {
+  aliases: {
+    'help': 'h',
+    'quiet': ['q', 's', 'silent']
+  },
+  defaults: {
+    help: false,
+    quiet: process.env.run_quiet === 'true'
+  },
+  isOkay(key, value) {
+    if (!this.aliases[key] && key !== 'version') {
+      usage(1, `Unknown option: ${key}`)
+    }
+
+    return true
+  }
+}).parse()
+
+if (argv.quiet) {
+  process.env.run_quiet = 'true'
+}
+
+if (argv.help) {
+  usage()
+}
+
+const runner = new Runner({
+  scriptName: argv[''][0],
+  unscannedArguments: argv['--']
+})
+
+if (argv.version) {
+  console.log(`${runner.appName} ${typeof version !== 'undefined' ? version : 'v0.0.0'}`)
+  process.exit()
+}
 
 runner.on('error', (error) => {
   console.error(error)
@@ -7,6 +55,10 @@ runner.on('error', (error) => {
 })
 
 runner.on('exit', (code) => {
+  if (code && !argv.quiet) {
+    console.error(`Exit status ${code}`)
+  }
+
   process.exit(code)
 })
 
@@ -17,13 +69,19 @@ runner.on('list', (scripts) => {
 })
 
 runner.on('run', (spec) => {
-  console.log()
-  console.log(`> ${spec.name}${spec.version ? `@${spec.version}` : ''} ${spec.wd}`)
-  console.log(`> ${spec.script}`)
-  console.log()
+  if (!argv.quiet) {
+    console.log()
+    console.log(`> ${spec.name}${spec.version ? `@${spec.version}` : ''} ${spec.wd}`)
+    console.log(`> ${spec.script}`)
+    console.log()
+  }
 })
 
 runner.on('signal', (signal) => {
+  if (!argv.quiet) {
+    console.error(`${signal}`)
+  }
+
   process.exit(1)
 })
 
