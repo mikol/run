@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// run v0.0.7 (2018-02-26T09:19:04.410Z)
+// run v0.0.7 (2018-02-28T07:40:57.317Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -30,9 +30,9 @@ var argv = new ArgvParser(process.argv.slice(2), {
   },
   defaults: {
     help: false,
-    quiet: process.env.run_quiet === 'true'
+    quiet: false
   },
-  isOkay: function isOkay(key, value) {
+  validate: function validate(key, value) {
     if (!this.aliases[key] && key !== 'version') {
       usage(1, 'Unknown option: ' + key);
     }
@@ -40,10 +40,6 @@ var argv = new ArgvParser(process.argv.slice(2), {
     return true;
   }
 }).parse();
-
-if (argv.quiet) {
-  process.env.run_quiet = 'true';
-}
 
 if (argv.help) {
   usage();
@@ -87,14 +83,6 @@ runner.on('run', function (spec) {
     console.log('> ' + spec.script);
     console.log();
   }
-});
-
-runner.on('signal', function (signal) {
-  if (!argv.quiet) {
-    console.error('' + signal);
-  }
-
-  process.exit(1);
 });
 
 runner.run();

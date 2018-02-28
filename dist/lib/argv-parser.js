@@ -1,4 +1,4 @@
-// run v0.0.7 (2018-02-26T09:19:04.410Z)
+// run v0.0.7 (2018-02-28T07:40:57.317Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -98,8 +98,8 @@ var ArgvParser = function () {
     this.aliases = aliases;
     this.cache = [];
     this.defaults = options.defaults;
-    this.isOkay = options.isOkay ? function (k, v) {
-      return options.isOkay(k, v);
+    this.validate = options.validate ? function (k, v) {
+      return options.validate(k, v);
     } : function () {
       return true;
     };
@@ -166,7 +166,7 @@ var ArgvParser = function () {
           var v = key.slice(i + 1);
           var p = this.parseValue(k, v, true);
 
-          if (this.isOkay(k, p)) {
+          if (this.validate(k, p)) {
             output[k] = p;
             if (typeof v === 'number') {
               i = -1;
@@ -189,7 +189,7 @@ var ArgvParser = function () {
           var _i = value != null || isBoolean ? index : index + 1;
           var _v = value != null ? value : isBoolean ? true : next.key;
 
-          if (this.isOkay(_k, _v)) {
+          if (this.validate(_k, _v)) {
             this.output[_k] = this.parseValue(_k, _v);
             return _i;
           }

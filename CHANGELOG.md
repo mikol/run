@@ -62,3 +62,9 @@
 ### 0.0.7 Process command line arguments
 
   * Implement `--version`, `--help`, and `--quiet` (with `--silent` alias)
+
+### 0.0.8 Abandon async script execution, programmatic stdio because of `^C` lag
+
+  * Use `spawnSync()` to run shell scripts
+  * Use `new Script().runInThisContext()` to run JS functions
+  * Remove `'signal'` event type

@@ -20,9 +20,9 @@ const argv = new ArgvParser(process.argv.slice(2), {
   },
   defaults: {
     help: false,
-    quiet: process.env.run_quiet === 'true'
+    quiet: false
   },
-  isOkay(key, value) {
+  validate(key, value) {
     if (!this.aliases[key] && key !== 'version') {
       usage(1, `Unknown option: ${key}`)
     }
@@ -30,10 +30,6 @@ const argv = new ArgvParser(process.argv.slice(2), {
     return true
   }
 }).parse()
-
-if (argv.quiet) {
-  process.env.run_quiet = 'true'
-}
 
 if (argv.help) {
   usage()
@@ -75,14 +71,6 @@ runner.on('run', (spec) => {
     console.log(`> ${spec.script}`)
     console.log()
   }
-})
-
-runner.on('signal', (signal) => {
-  if (!argv.quiet) {
-    console.error(`${signal}`)
-  }
-
-  process.exit(1)
 })
 
 runner.run()

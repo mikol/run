@@ -48,11 +48,6 @@ runner.on('run', (spec) => {
   console.log()
 })
 
-runner.on('signal', (signal) => {
-  console.error(`${signal}`)
-  process.exit(1)
-})
-
 runner.run()
 ```
 

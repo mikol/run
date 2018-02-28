@@ -1,4 +1,4 @@
-// run v0.0.7 (2018-02-26T09:19:04.410Z)
+// run v0.0.7 (2018-02-28T07:40:57.317Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -235,52 +235,55 @@ var Runner = function (_EventEmitter) {
         var scriptsPathname = path.join(this.moduleRoot, this.scriptsBasename);
         var self = this;
 
-        var index = 0;
-
         this.exportEnvironmentVariables();
-        process.chdir(this.moduleRoot);(function next() {
-          if (index < nScripts) {
-            var name = scriptNames[index];
-            var script = runnableScripts[name];
+        process.chdir(this.moduleRoot);
 
-            env.npm_lifecycle_event = env.run_event = name;
+        for (var i = 0; i < nScripts; ++i) {
+          var name = scriptNames[i];
+          var script = runnableScripts[name];
 
-            var spec = {
-              wd: self.moduleRoot,
-              name: self.package.name,
-              version: self.package.version
-            };
+          env.npm_lifecycle_event = env.run_event = name;
 
-            new Promise(function (resolve, reject) {
-              var argv = name === self.scriptName ? self.unscannedArguments : [];
+          var spec = {
+            wd: self.moduleRoot,
+            name: self.package.name,
+            version: self.package.version
+          };
 
-              if (typeof script === 'function') {
-                spec.script = env.npm_lifecycle_script = env.run_script = name + '(' + (argv.length ? quoteFunctionArguments(argv) : '') + ')';
+          var _argv = name === self.scriptName ? self.unscannedArguments : [];
+          var code = void 0;
+          var error = void 0;
+          var signal = void 0;
 
-                self.emit('run', spec);
-                exec.js([scriptsPathname, name].concat(argv), resolve, reject);
-              } else {
-                spec.script = env.npm_lifecycle_script = env.run_script = script;
+          if (typeof script === 'function') {
+            spec.script = env.npm_lifecycle_script = env.run_script = name + '(' + (_argv.length ? quoteFunctionArguments(_argv) : '') + ')';
 
-                self.emit('run', spec);
-                exec.sh([script].concat(argv), resolve, reject);
-              }
-            }).then(function () {
-              ++index;
-              next();
-            }).catch(function (reason) {
-              if (reason.code) {
-                self.emit('exit', reason.code);
-              } else if (reason.error) {
-                self.emit('error', reason.error);
-              } else if (reason.signal) {
-                self.emit('signal', reason.signal);
-              } else {
-                throw reason;
-              }
-            });
+            self.emit('run', spec);
+            var _exec$js = exec.js([scriptsPathname, name].concat(_argv));
+
+            error = _exec$js.error;
+          } else {
+            spec.script = env.npm_lifecycle_script = env.run_script = script;
+
+            self.emit('run', spec);
+            var _exec$sh = exec.sh([script].concat(_argv));
+
+            error = _exec$sh.error;
+            signal = _exec$sh.signal;
+            code = _exec$sh.status;
           }
-        })();
+
+          if (error) {
+            self.emit('error', error);
+            break;
+          } else if (code) {
+            self.emit('exit', code);
+            break;
+          } else if (signal) {
+            self.emit('signal', signal);
+            break;
+          }
+        }
       }
     }
   }]);
