@@ -79,17 +79,6 @@ export default [
     ]
   },
   {
-    input: 'lib/fork.js',
-    output: {
-      banner,
-      file: 'dist/lib/fork.js',
-      format: 'cjs'
-    },
-    plugins: [
-      babel(babelOptions)
-    ]
-  },
-  {
     input: 'lib/runner.js',
     output: {
       banner,
