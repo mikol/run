@@ -97,7 +97,7 @@ describe('module', () => {
       }
     })
 
-    it('can’t to change directories', () => {
+    it('can’t change directories', () => {
       const runner = new Runner({
         moduleRoot,
         scriptName: 'noop',
@@ -126,7 +126,7 @@ describe('module', () => {
       Module._load = _load
     })
 
-    it('can’t to find scripts', () => {
+    it('can’t find scripts', () => {
       const runner = new Runner({
         moduleRoot,
         scriptName: 'noop',
