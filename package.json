@@ -1,6 +1,6 @@
 {
   "name": "run-simple",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "A simple, enhanced replacement for `npm run-script <command> [-- <args>...]`",
   "main": "dist/lib/runner.js",
   "bin": {
