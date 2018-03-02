@@ -4,6 +4,7 @@ import cleanup from 'rollup-plugin-cleanup'
 
 const {
   binPathname,
+  distPathname,
   license,
   mainPathname,
   url,
@@ -19,13 +20,13 @@ const cleanupOptions = {
   maxEmptyLines: 1
 }
 
-const shebang =
-`#!/usr/bin/env node
+const shebang = `\
+#!/usr/bin/env node
 
 `
 
-const banner =
-`// run v${version} (${new Date().toISOString()})
+const banner = `\
+// run v${version} (${new Date().toISOString()})
 // ${url}
 // ${license}
 `
@@ -59,7 +60,7 @@ export default [
     input: 'lib/argv-parser.js',
     output: {
       banner,
-      file: 'dist/lib/argv-parser.js',
+      file: `${distPathname}/lib/argv-parser.js`,
       format: 'cjs'
     },
     plugins: [
@@ -71,7 +72,7 @@ export default [
     input: 'lib/exec.js',
     output: {
       banner,
-      file: 'dist/lib/exec.js',
+      file: `${distPathname}/lib/exec.js`,
       format: 'cjs'
     },
     plugins: [

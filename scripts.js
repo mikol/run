@@ -1,12 +1,13 @@
 const {
-  binPathname
+  binPathname,
+  distPathname
 } = require('./scripts/vars')
 
 module.exports = {
   // ---------------------------------------------------------------------------
   // Dist
 
-  predist: `mkdir -p dist`,
+  predist: `mkdir -p ${distPathname}`,
   dist: 'rollup -c',
   postdist: `chmod 755 ${binPathname}`,
   watchdist: 'run dist -- --watch',
@@ -24,7 +25,7 @@ module.exports = {
   // ---------------------------------------------------------------------------
   // Test
 
-  pretest: 'run dist',
+  pretest: 'NODE_ENV=test run -q dist',
   test: "mocha -s 400 test/init.js './test/*.test.js' './test/**/*.test.js'",
   watchtest: 'run test -- --watch'
 

@@ -6,7 +6,7 @@ const _chdir = process.chdir
 const _load = Module._load
 
 const wd = process.cwd()
-const Runner = require(path.join(wd, 'dist', 'lib', 'runner'))
+const Runner = require(require('../scripts/vars').mainPathname)
 
 const moduleRoot = path.join(__dirname, 'echo')
 

@@ -1,8 +1,11 @@
+process.env.NODE_ENV = 'test'
+
 const chai = require('chai')
 const {spawnSync} = require('child_process')
 const path = require('path')
 
-const run = `${path.resolve(process.cwd(), 'dist', 'run')}`
+const wd = process.cwd()
+const {binPathname} = require(`${path.resolve(wd, 'scripts', 'vars')}`)
 
 chai.use(require('chai-string'))
 
@@ -18,7 +21,7 @@ global.runRun = (moduleRoot, argv) => {
     status,
     stderr,
     stdout
-  } = spawnSync(run, argv)
+  } = spawnSync(binPathname, argv)
 
   process.env.INIT_CWD = INIT_CWD
 

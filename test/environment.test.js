@@ -3,7 +3,7 @@ const path = require('path')
 const PATH = process.env.PATH
 
 const wd = process.cwd()
-const Runner = require(path.join(wd, 'dist', 'lib', 'runner'))
+const Runner = require(require('../scripts/vars').mainPathname)
 
 const moduleRoot = path.join(__dirname, 'echo')
 const scriptName = 'noop'
