@@ -68,3 +68,11 @@
   * Use `spawnSync()` to run shell scripts
   * Use `new Script().runInThisContext()` to run JS functions
   * Remove `'signal'` event type
+
+### 0.0.9 Expand test coverage
+
+  * Close over `scripts.js` functions
+  * Emit error event when package directory can’t be accessed
+  * Return early if the package directory or both `package.json` and
+    `scripts.js` can’t be accessed
+  * Trim `env.npm_package_gitHead`

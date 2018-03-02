@@ -2,25 +2,25 @@ const chai = require('chai')
 const {spawnSync} = require('child_process')
 const path = require('path')
 
-process.env.PATH = `${path.resolve(process.cwd(), 'dist')}:${process.env.PATH}`
+const run = `${path.resolve(process.cwd(), 'dist', 'run')}`
 
 chai.use(require('chai-string'))
 
 global.expect = chai.expect
 
-global.runRun = (INIT_CWD, argv) => {
-  const _INIT_CWD = process.env.INIT_CWD
+global.runRun = (moduleRoot, argv) => {
+  const INIT_CWD = process.env.INIT_CWD
 
-  process.env.INIT_CWD = INIT_CWD
+  process.env.INIT_CWD = moduleRoot
 
   const {
     error,
     status,
     stderr,
     stdout
-  } = spawnSync('run', argv)
+  } = spawnSync(run, argv)
 
-  process.env.INIT_CWD = _INIT_CWD
+  process.env.INIT_CWD = INIT_CWD
 
   if (error) {
     throw error

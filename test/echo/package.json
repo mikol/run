@@ -3,8 +3,9 @@
   "version": "2.3.5",
   "scripts": {
     "echo": "echo",
+    "pkg": "echo package",
     "prex": "echo pre",
-    "x": "run echo -- x",
+    "x": "npm run echo -- x",
     "postx": "echo post"
   }
 }

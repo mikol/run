@@ -1,4 +1,4 @@
-// run v0.0.8 (2018-02-28T07:51:30.285Z)
+// run v0.0.8 (2018-03-02T09:29:02.474Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -7,11 +7,8 @@
 var _require = require('child_process');
 var spawnSync = _require.spawnSync;
 
-var _require2 = require('fs');
-var readFileSync = _require2.readFileSync;
-
-var _require3 = require('vm');
-var Script = _require3.Script;
+var _require2 = require('vm');
+var Script = _require2.Script;
 
 var script = void 0;
 
@@ -19,7 +16,7 @@ function js(argv) {
   try {
     if (!script) {
       var filename = argv[0];
-      var source = '((r, s, a) => r(\'' + filename + '\')[s].apply(null, a))';
+      var source = '((r,s,a,m)=>{m=r(\'' + filename + '\');m[s].apply(m,a)})';
 
       script = new Script(source, { filename: filename });
     }

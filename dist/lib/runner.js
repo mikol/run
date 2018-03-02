@@ -1,4 +1,4 @@
-// run v0.0.8 (2018-02-28T07:51:30.285Z)
+// run v0.0.8 (2018-03-02T09:29:02.474Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -97,6 +97,7 @@ var Runner = function (_EventEmitter) {
     var _this = possibleConstructorReturn(this, (Runner.__proto__ || Object.getPrototypeOf(Runner)).call(this));
 
     Object.assign(_this, Runner.defaults(), options);
+    _this.initialDirectory = process.cwd();
     _this.wd = _this.moduleRoot;
     return _this;
   }
@@ -136,9 +137,11 @@ var Runner = function (_EventEmitter) {
       }
 
       try {
-        env.npm_package_gitHead = execSync("git log -1 --format='%H'", {
+        var buffer = execSync("git log -1 --format='%H'", {
           stdio: ['ignore', 'pipe', 'ignore']
         });
+
+        env.npm_package_gitHead = ('' + buffer).trim();
       } catch (_) {
 
       }
@@ -156,34 +159,44 @@ var Runner = function (_EventEmitter) {
 
       this.findScripts();
 
-      var scriptName = this.scriptName;
-      var found = !!this.scripts[scriptName];
-      var names = found ? [scriptName] : scriptName === 'restart' ? defaultRestartNames.slice() : [];
+      if (this.scripts) {
+        var scriptName = this.scriptName;
+        var found = !!this.scripts[scriptName];
+        var names = found ? [scriptName] : scriptName === 'restart' ? defaultRestartNames.slice() : [];
 
-      if (!/^(?:pre|post)/.test(scriptName)) {
-        names.unshift('pre' + scriptName);
-        names.push('post' + scriptName);
-      }
-
-      return names.reduce(function (accumulator, name) {
-        var source = _this3.scripts[name];
-
-        if (source) {
-          var interpolatedSource = interpolateScriptSource(source);
-
-          if (name === scriptName) {
-            accumulator[name] = _this3.appendUnscannedArguments(interpolatedSource);
-          } else {
-            accumulator[name] = interpolatedSource;
-          }
+        if (!/^(?:pre|post)/.test(scriptName)) {
+          names.unshift('pre' + scriptName);
+          names.push('post' + scriptName);
         }
 
-        return accumulator;
-      }, {});
+        return names.reduce(function (accumulator, name) {
+          var source = _this3.scripts[name];
+
+          if (source) {
+            var interpolatedSource = interpolateScriptSource(source);
+
+            if (name === scriptName) {
+              accumulator[name] = _this3.appendUnscannedArguments(interpolatedSource);
+            } else {
+              accumulator[name] = interpolatedSource;
+            }
+          }
+
+          return accumulator;
+        }, {});
+      }
     }
   }, {
     key: 'findScripts',
     value: function findScripts() {
+      try {
+        process.chdir(this.moduleRoot);
+      } catch (error) {
+        process.chdir(this.initialDirectory);
+        this.emit('error', this.appName + ': Could not change to ' + this.moduleRoot + ' starting from ' + this.wd + '\n' + error);
+        return;
+      }
+
       this.package = ignoreModuleNotFound(path.join(this.moduleRoot, this.packageBasename));
       this.scripts = ignoreModuleNotFound(path.join(this.moduleRoot, this.scriptsBasename));
 
@@ -206,8 +219,7 @@ var Runner = function (_EventEmitter) {
         }
 
         this.dotBin = path.join(this.moduleRoot, 'node_modules', '.bin');
-
-        return this;
+        return;
       }
 
       this.moduleRoot = this.moduleRoot.split(path.sep).slice(0, -1).join(path.sep);
@@ -216,12 +228,18 @@ var Runner = function (_EventEmitter) {
         return this.findScripts();
       }
 
+      process.chdir(this.initialDirectory);
       this.emit('error', this.appName + ': Did not find ' + this.packageBasename + ' or ' + this.scriptsBasename + ' starting from ' + this.wd);
     }
   }, {
     key: 'run',
     value: function run() {
       var runnableScripts = this.findRunnableScripts();
+
+      if (!this.scripts) {
+        return;
+      }
+
       var scriptNames = Object.keys(runnableScripts);
       var nScripts = scriptNames.length;
 
@@ -233,39 +251,32 @@ var Runner = function (_EventEmitter) {
         }
       } else {
         var scriptsPathname = path.join(this.moduleRoot, this.scriptsBasename);
-        var self = this;
 
         this.exportEnvironmentVariables();
-        process.chdir(this.moduleRoot);
 
-        for (var i = 0; i < nScripts; ++i) {
+        for (var i = 0, code, error, signal; i < nScripts && !code && !error && !signal; ++i) {
           var name = scriptNames[i];
           var script = runnableScripts[name];
-
-          env.npm_lifecycle_event = env.run_event = name;
-
+          var _argv = name === this.scriptName ? this.unscannedArguments : [];
           var spec = {
-            wd: self.moduleRoot,
-            name: self.package.name,
-            version: self.package.version
+            wd: this.moduleRoot,
+            name: this.package.name,
+            version: this.package.version
           };
 
-          var _argv = name === self.scriptName ? self.unscannedArguments : [];
-          var code = void 0;
-          var error = void 0;
-          var signal = void 0;
+          env.npm_lifecycle_event = env.run_event = name;
 
           if (typeof script === 'function') {
             spec.script = env.npm_lifecycle_script = env.run_script = name + '(' + (_argv.length ? quoteFunctionArguments(_argv) : '') + ')';
 
-            self.emit('run', spec);
+            this.emit('run', spec);
             var _exec$js = exec.js([scriptsPathname, name].concat(_argv));
 
             error = _exec$js.error;
           } else {
             spec.script = env.npm_lifecycle_script = env.run_script = script;
 
-            self.emit('run', spec);
+            this.emit('run', spec);
             var _exec$sh = exec.sh([script].concat(_argv));
 
             error = _exec$sh.error;
@@ -274,14 +285,11 @@ var Runner = function (_EventEmitter) {
           }
 
           if (error) {
-            self.emit('error', error);
-            break;
+            this.emit('error', error);
           } else if (code) {
-            self.emit('exit', code);
-            break;
+            this.emit('exit', code);
           } else if (signal) {
-            self.emit('signal', signal);
-            break;
+            this.emit('signal', signal);
           }
         }
       }
