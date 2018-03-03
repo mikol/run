@@ -3,8 +3,8 @@
 ## Briefly
 
 `run` is a simple, enhanced replacement for `npm run-script <command> [--
-<args>...]`. If you already use `npm run`, you can use `run` immediately. But
-`run` can do a bit more as well.
+<args>...]` with zero third-party dependencies. If you already use `npm run`,
+you can use `run` immediately. But `run` can do a bit more as well.
 
 ## Installation
 
