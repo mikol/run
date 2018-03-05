@@ -91,22 +91,22 @@ But if you create a `scripts.js` file, `run` will look there for tasks as well.
 Here’s what the `run` project’s own `scripts.js` looks like:
 
 ```js
+const path = require('path')
+
+const varsPathname = path.resolve('./scripts/vars.js')
 const {
-  binPathname
-} = require('./scripts/vars')
+  binPathname,
+  distPathname,
+  mainPathname
+} = require(varsPathname)
 
 module.exports = {
   // ---------------------------------------------------------------------------
   // Dist
 
-  predist: `mkdir -p dist`,
+  predist: `mkdir -p ${distPathname}`,
   dist: 'rollup -c',
   postdist: `chmod 755 ${binPathname}`,
-  watchdist: 'run dist -- --watch',
-
-  // ---------------------------------------------------------------------------
-
-  echo: console.log,
 
   // ---------------------------------------------------------------------------
   // Publish
@@ -117,9 +117,40 @@ module.exports = {
   // ---------------------------------------------------------------------------
   // Test
 
-  pretest: 'run dist',
+  pretest: 'NODE_ENV=test run -q dist',
   test: "mocha -s 400 test/init.js './test/*.test.js' './test/**/*.test.js'",
-  watchtest: 'run test -- --watch'
+  watchtest() {
+    delete require.cache[varsPathname] // Force `vars` to be reinitialized.
+
+    process.env.NODE_ENV = 'test'
+
+    const {spawn, spawnSync} = require('child_process')
+    const {watch} = require('fs')
+
+    const {distPathname, mainPathname} = require(varsPathname)
+    const testPathname = path.resolve('test')
+
+    spawn('sh', ['-c', 'run -q dist -- --watch'], {stdio: 'inherit'})
+
+    const distWatcher = watch(mainPathname)
+    distWatcher.once('change', () => {
+      // Wait for `mainPathname` to change (it’s the last file to be changed by
+      // rollup), then add a listener for subsequent `test` directory changes.
+
+      distWatcher.close()
+
+      let n = 0
+      watch(testPathname, {recursive: true}, () => {
+        // XXX: `watch()` initially generates two change events for
+        // `mainPathname`. Ignore the first one.
+        if (n > 0) {
+          spawnSync('sh', ['-c', this.test], {stdio: 'inherit'})
+        } else {
+          n++
+        }
+      })
+    })
+  }
 
   // ---------------------------------------------------------------------------
 }
@@ -131,18 +162,9 @@ modules between the code you build and the code that builds it.
 Then there are comments and whitespace, which make automation tasks easier to
 write, read, and maintain.
 
-Finally, you might have noticed that the `echo` script is actually a plain-old
-JavaScript function reference. Just like other scripts, functions will be passed
-whatever arguments you define after the `--` in `run <command> [-- <args>...]`.
-
-```
-$ run echo -- Hello, World!
-
-> echo /path/to/com/github/mikol/run
-> echo("Hello,", "World!")
-
-Hello, World!
-```
+Finally, the `watchtest` script is actually a plain-old JavaScript function.
+Just like other scripts, functions will be passed whatever arguments you define
+after the `--` in `run <command> [-- <args>...]`.
 
 Imagine that.
 
