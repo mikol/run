@@ -1,4 +1,4 @@
-// run v0.1.0 (2018-03-05T08:34:29.541Z)
+// run v0.1.0 (2018-03-05T18:34:46.150Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -16,7 +16,7 @@ function js(argv) {
   try {
     if (!script) {
       var filename = argv[0];
-      var source = '((r,s,a,m)=>{m=r(\'' + filename + '\');return m[s].apply(m,a)})';
+      var source = '((r,s,a,m)=>(m=r(\'' + filename + '\'),m[s].apply(m,a)))';
 
       script = new Script(source, { filename: filename });
     }
