@@ -1,3 +1,5 @@
+/* global expect, runRun, sinon */
+
 const path = require('path')
 
 const PATH = process.env.PATH

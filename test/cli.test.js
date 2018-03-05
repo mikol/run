@@ -1,4 +1,4 @@
-/* global expect, runRun */
+/* global expect, runRun, sinon */
 
 const path = require('path')
 const eol = require('os').EOL
@@ -185,6 +185,27 @@ describe('cli', () => {
       const expected = 'true'
 
       expect(stdout).to.equal(expected)
+    })
+
+    describe('async', () => {
+      it('waits for promises', () => {
+        // NOTE: Scripts run in a spawned child process. Their global timers
+        // (e.g., `setTimeout()`) cannot be mocked using sinon. :¬(
+        const stdout = runRun(moduleRoot, ['-q', 'wait']).trim()
+
+        return new Promise((resolve, reject) => {
+          const dates = stdout.split(/\r\n?|\n/).map((x) => new Date(x))
+          const actual = dates[1] - dates[0]
+
+          try {
+            expect(actual).to.be.within(100, 200)
+          } catch (error) {
+            reject(error)
+          }
+
+          resolve()
+        })
+      })
     })
   })
 })

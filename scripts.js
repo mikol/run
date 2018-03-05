@@ -15,6 +15,13 @@ module.exports = {
   // ---------------------------------------------------------------------------
 
   echo: console.log,
+  timeout() {
+    return new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Timed out'))
+      }, 5000)
+    })
+  },
 
   // ---------------------------------------------------------------------------
   // Publish

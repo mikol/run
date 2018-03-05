@@ -1,4 +1,4 @@
-// run v0.1.0 (2018-03-03T16:34:48.219Z)
+// run v0.1.0 (2018-03-05T00:59:58.862Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -234,6 +234,8 @@ var Runner = function (_EventEmitter) {
   }, {
     key: 'run',
     value: function run() {
+      var _this4 = this;
+
       var runnableScripts = this.findRunnableScripts();
 
       if (!this.scripts) {
@@ -254,44 +256,67 @@ var Runner = function (_EventEmitter) {
 
         this.exportEnvironmentVariables();
 
-        for (var i = 0, code, error, signal; i < nScripts && !code && !error && !signal; ++i) {
-          var name = scriptNames[i];
+        var code = void 0,
+            error = void 0,
+            index = 0,
+            promise = void 0,
+            signal = void 0;
+
+        var next = function next() {
+          if (index >= nScripts) {
+            return;
+          }
+
+          var name = scriptNames[index];
           var script = runnableScripts[name];
-          var _argv = name === this.scriptName ? this.unscannedArguments : [];
+          var argv = name === _this4.scriptName ? _this4.unscannedArguments : [];
           var spec = {
-            wd: this.moduleRoot,
-            name: this.package.name,
-            version: this.package.version
+            wd: _this4.moduleRoot,
+            name: _this4.package.name,
+            version: _this4.package.version
           };
 
           env.npm_lifecycle_event = env.run_event = name;
 
           if (typeof script === 'function') {
-            spec.script = env.npm_lifecycle_script = env.run_script = name + '(' + (_argv.length ? quoteFunctionArguments(_argv) : '') + ')';
+            spec.script = env.npm_lifecycle_script = env.run_script = name + '(' + (argv.length ? quoteFunctionArguments(argv) : '') + ')';
 
-            this.emit('run', spec);
-            var _exec$js = exec.js([scriptsPathname, name].concat(_argv));
+            _this4.emit('run', spec);
+            var _exec$js = exec.js([scriptsPathname, name].concat(argv));
 
             error = _exec$js.error;
+            promise = _exec$js.promise;
           } else {
             spec.script = env.npm_lifecycle_script = env.run_script = script;
 
-            this.emit('run', spec);
-            var _exec$sh = exec.sh([script].concat(_argv));
+            _this4.emit('run', spec);
+            var _exec$sh = exec.sh([script].concat(argv));
 
             error = _exec$sh.error;
             signal = _exec$sh.signal;
             code = _exec$sh.status;
           }
 
-          if (error) {
-            this.emit('error', error);
+          if (promise) {
+            promise.then(function () {
+              ++index;
+              next();
+            }).catch(function (error) {
+              _this4.emit('error', error);
+            });
+          } else if (error) {
+            _this4.emit('error', error);
           } else if (code) {
-            this.emit('exit', code);
+            _this4.emit('exit', code);
           } else if (signal) {
-            this.emit('signal', signal);
+            _this4.emit('signal', signal);
+          } else {
+            ++index;
+            next();
           }
-        }
+        };
+
+        next();
       }
     }
   }]);

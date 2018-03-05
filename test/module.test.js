@@ -1,3 +1,5 @@
+/* global expect, runRun, sinon */
+
 const Module = require('module')
 const path = require('path')
 
@@ -141,6 +143,40 @@ describe('module', () => {
       runner.run()
 
       expect(received).to.match(/: Did not find /)
+    })
+  })
+
+  describe('async', () => {
+    let clock
+
+    beforeEach(() => {
+      clock = sinon.useFakeTimers(new Date())
+    })
+
+    afterEach(() => {
+      clock.restore()
+    })
+
+    it('waits for promises', () => {
+      const expected = 'Timed out'
+      const runner = new Runner({
+        moduleRoot,
+        scriptName: 'timeout',
+        unscannedArguments: []
+      })
+
+      runner.run()
+      clock.tick(5000)
+
+      return new Promise((resolve, reject) => {
+        runner.on('error', (error) => {
+          resolve()
+        })
+
+        setTimeout(() => {
+          reject(new Error('Didn’t time out'))
+        })
+      })
     })
   })
 })
