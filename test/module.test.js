@@ -158,7 +158,6 @@ describe('module', () => {
     })
 
     it('waits for promises', () => {
-      const expected = 'Timed out'
       const runner = new Runner({
         moduleRoot,
         scriptName: 'timeout',
@@ -170,7 +169,9 @@ describe('module', () => {
 
       return new Promise((resolve, reject) => {
         runner.on('error', (error) => {
-          resolve()
+          if (error.message === 'Timed out') {
+            resolve()
+          }
         })
 
         setTimeout(() => {
