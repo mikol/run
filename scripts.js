@@ -37,6 +37,9 @@ module.exports = {
     const {distPathname, mainPathname} = require(varsPathname)
     const testPathname = path.resolve('test')
 
+    // XXX: Run dist synchronously once to ensure that `test/dist` is populated.
+    spawnSync('sh', ['-c', 'run dist'], {stdio: 'ignore'})
+
     spawn('sh', ['-c', 'run -q dist -- --watch'], {stdio: 'inherit'})
 
     const distWatcher = watch(mainPathname)
