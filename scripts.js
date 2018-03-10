@@ -1,5 +1,7 @@
 const path = require('path')
+const rollup = require('rollup')
 
+const reimportFrom = require('./scripts/reimport-from')
 const varsPathname = path.resolve('./scripts/vars.js')
 const {
   binPathname,
@@ -27,36 +29,64 @@ module.exports = {
   pretest: 'NODE_ENV=test run -q dist',
   test: "mocha -s 400 test/init.js './test/*.test.js' './test/**/*.test.js'",
   watchtest() {
-    delete require.cache[varsPathname] // Force `vars` to be reinitialized.
-
     process.env.NODE_ENV = 'test'
 
-    const {spawn, spawnSync} = require('child_process')
-    const {watch} = require('fs')
+    return Promise.all([
+      reimportFrom(varsPathname),
+      reimportFrom('./rollup.config.js')
+    ]).then(([, config]) => {
+      const {spawn, spawnSync} = require('child_process')
+      const {watch} = require('chokidar')
 
-    const {distPathname, mainPathname} = require(varsPathname)
-    const testPathname = path.resolve('test')
+      const {distPathname, mainPathname} = require(varsPathname)
+      const testPathname = path.resolve('test')
 
-    // XXX: Run dist synchronously once to ensure that `test/dist` is populated.
-    spawnSync('sh', ['-c', 'run dist'], {stdio: 'ignore'})
+      const wdRegExp = new RegExp(`^${process.cwd()}/`)
+      const rollupWatcher = rollup.watch(config)
 
-    spawn('sh', ['-c', 'run -q dist -- --watch'], {stdio: 'inherit'})
+      const runTest = () => {
+        spawnSync('sh', ['-c', this.test], {stdio: 'inherit'})
+      }
 
-    const distWatcher = watch(mainPathname)
-    distWatcher.once('change', () => {
-      // Wait for `mainPathname` to change (it’s the last file to be changed by
-      // rollup), then add a listener for subsequent `test` directory changes.
+      const debounceTimeoutMilliseconds = 250
 
-      distWatcher.close()
+      let debounceTimeoutId
+      let ready = false
+      const watchRollupOnce = (event) => {
+        if (!ready && event.code === 'END') {
+          ready = true
+          rollupWatcher.removeListener('event', watchRollupOnce)
+          runTest()
 
-      let n = 0
-      watch(testPathname, {recursive: true}, () => {
-        // XXX: `watch()` initially generates two change events for
-        // `mainPathname`. Ignore the first one.
-        if (n > 0) {
-          spawnSync('sh', ['-c', this.test], {stdio: 'inherit'})
-        } else {
-          n++
+          const testWatcher = watch(testPathname)
+          const watchTestOnce = () => {
+            testWatcher.on('all', (type, pathname) => {
+              clearTimeout(debounceTimeoutId)
+              debounceTimeoutId = setTimeout(runTest, debounceTimeoutMilliseconds)
+            })
+          }
+
+          testWatcher.once('ready', watchTestOnce)
+        }
+      }
+
+      rollupWatcher.on('event', watchRollupOnce)
+
+      rollupWatcher.on('event', (event) => {
+        switch (event.code) {
+          case 'BUNDLE_END':
+            const input = event.input
+            const output = event.output
+              .map((x) => x.replace(wdRegExp, ''))
+              .join(`\n${new Array(input.length).join(' ')}`)
+
+            console.log(input, '→', output)
+            break
+          case 'ERROR':
+            console.error(event.error)
+            break
+          case 'FATAL':
+            throw event.error
         }
       })
     })
