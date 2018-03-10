@@ -76,3 +76,12 @@
   * Return early if the package directory or both `package.json` and
     `scripts.js` can’t be accessed
   * Trim `env.npm_package_gitHead`
+
+### 0.1.0 Public announcement
+
+### 0.2.0 Async `scripts.js` functions
+
+  * Handle promise return values from `scripts.js` functions
+  * Elide `scripts.js` function source code with `[Function]` in list output
+  * Write `watchtest()` script
+  * Rethrow a wider range of module import errors
