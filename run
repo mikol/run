@@ -60,7 +60,11 @@ runner.on('exit', (code) => {
 
 runner.on('list', (scripts) => {
   console.log(`${runner.appName}: ${runner.moduleRoot} scripts:`)
-  Object.keys(scripts).forEach((name) => console.log(`  ${name}:\n    ${scripts[name]}`))
+  Object.keys(scripts).forEach((name) => {
+    const script = scripts[name]
+    console.log(`  ${name}:\n    ${typeof script === 'string' ? script : '[Function]'}`)
+  })
+
   process.exit()
 })
 
