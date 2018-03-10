@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// run v0.1.0 (2018-03-05T18:34:46.150Z)
+// run v0.1.0 (2018-03-10T20:39:59.807Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
@@ -71,8 +71,10 @@ runner.on('exit', function (code) {
 runner.on('list', function (scripts) {
   console.log(runner.appName + ': ' + runner.moduleRoot + ' scripts:');
   Object.keys(scripts).forEach(function (name) {
-    return console.log('  ' + name + ':\n    ' + scripts[name]);
+    var script = scripts[name];
+    console.log('  ' + name + ':\n    ' + (typeof script === 'string' ? script : '[Function]'));
   });
+
   process.exit();
 });
 
