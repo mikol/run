@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
-// run v0.1.0 (2018-03-10T20:39:59.807Z)
+// run v0.2.0 (2018-03-10T22:57:29.720Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
-const version = 'v0.1.0'
+const version = 'v0.2.0'
 
 'use strict';
 
