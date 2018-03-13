@@ -85,3 +85,5 @@
   * Elide `scripts.js` function source code with `[Function]` in list output
   * Write `watchtest()` script
   * Rethrow a wider range of module import errors
+
+### 0.2.1 Revert broader import error throwing
