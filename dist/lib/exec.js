@@ -1,4 +1,4 @@
-// run v0.2.2 (2023-01-18T22:50:00.500Z)
+// run v0.2.3 (2023-01-18T23:15:39.624Z)
 // https://github.com/mikol/run
 // http://creativecommons.org/licenses/by-sa/4.0/
 
